@@ -3,7 +3,7 @@
 
 ## Best Result:
 
-- Best Validation Acc: 94.00% 
+- Validation Acc: 94.00% 
 - Test Acc: 92.11%
 
 
