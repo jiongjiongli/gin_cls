@@ -1,4 +1,4 @@
-# Graph Isomorphism Network Classification
+# MUTAG Dataset Classification Using Graph Isomorphism Network (GIN)
 ## Dataset: 
 
 - Name: MUTAG
