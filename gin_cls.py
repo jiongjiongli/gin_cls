@@ -116,12 +116,19 @@ class GINClassification(nn.Module):
 
 
 class Trainer:
-    def __init__(self, config, config_idx, fold, dataloaders, model):
+    def __init__(self,
+        config,
+        config_idx,
+        fold,
+        dataloaders,
+        model,
+        model_dir_path):
         self.config = config
         self.config_idx = config_idx
         self.fold = fold
         self.model = model
         self.dataloaders = dataloaders
+        self.model_dir_path = model_dir_path
 
         self.optimizer = optim.Adam(model.parameters(), lr=config.lr)
         self.criterion = nn.CrossEntropyLoss()
@@ -129,7 +136,7 @@ class Trainer:
     def train(self):
         config = self.config
 
-        model_dir_path = config.root_dir_path / "models" / config.dataset_name
+        model_dir_path = self.model_dir_path
         model_dir_path.mkdir(parents=True, exist_ok=True)
         best_model_path = model_dir_path / f"config_{self.config_idx + 1:03d}_fold_{self.fold + 1:03d}_best_model.pth"
         eval_metrics_file_path = model_dir_path / f"config_{self.config_idx + 1:03d}_fold_{self.fold + 1:03d}_eval_metrics.csv"
@@ -375,6 +382,8 @@ trainval_idx, test_idx = train_test_split(dataset_indices,
             test_size=common_config.test_size,
             random_state=common_config.seed)
 
+model_dir_path = common_config.root_dir_path / "models" / common_config.dataset_name
+
 all_results = []
 
 
@@ -422,7 +431,7 @@ for config_idx, input_config_dict in enumerate(config_dicts):
             out_channels=config.out_channels,
             num_classes=dataset.num_classes)
 
-        trainer = Trainer(config, config_idx, fold, dataloaders, model)
+        trainer = Trainer(config, config_idx, fold, dataloaders, model, model_dir_path)
 
         best_result = trainer.train()
         best_results.append(best_result)
@@ -446,9 +455,6 @@ for config_idx, input_config_dict in enumerate(config_dicts):
     all_results.append(result)
 
 all_results_df = pd.DataFrame(all_results)
-
-
-
 
 
 def show_best_result(all_results_df):
@@ -506,7 +512,7 @@ def show_metrics(eval_metrics_file_path):
 
 result_idx = show_best_result(all_results_df)
 
-eval_metrics_file_paths = Path("/content/models/MUTAG").glob(f"config_{result_idx + 1:03d}_fold_*_eval_metrics.csv")
+eval_metrics_file_paths = model_dir_path.glob(f"config_{result_idx + 1:03d}_fold_*_eval_metrics.csv")
 eval_metrics_file_paths = list(eval_metrics_file_paths)
 eval_metrics_file_paths.sort()
 
@@ -549,9 +555,15 @@ model = GINClassification(in_channels=dataset.num_node_features,
     out_channels=config.out_channels,
     num_classes=dataset.num_classes)
 
-trainer = Trainer(config, config_idx, fold, dataloaders, model)
+trainer = Trainer(config, config_idx, fold, dataloaders, model, model_dir_path)
 
 best_result = trainer.train()
 
-eval_metrics_file_path = Path("/content/models/MUTAG") / f"config_{config_idx + 1:03d}_fold_{fold + 1:03d}_eval_metrics.csv"
+eval_metrics_file_path = model_dir_path / f"config_{config_idx + 1:03d}_fold_{fold + 1:03d}_eval_metrics.csv"
 show_metrics(eval_metrics_file_path)
+model_path = eval_metrics_file_path = model_dir_path / f"config_{config_idx + 1:03d}_fold_{fold + 1:03d}_best_model.pth"
+
+trainer.run_eval(model_path,
+    best_result["best_epoch"],
+    best_result["best_val_acc"],
+    best_result["best_test_acc"])
