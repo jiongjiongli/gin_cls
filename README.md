@@ -15,7 +15,7 @@
 
 1. GINConv
 2. Model hyperparameter selection: 10 Fold Cross Validation + Hyper-parameters Grid Search
-3. Final step: Use all training data to train model.
+3. Final step: Use all training + validation data to train model.
 
 ## Reference:
 
